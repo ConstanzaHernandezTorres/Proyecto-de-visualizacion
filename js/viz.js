@@ -74,12 +74,11 @@ function setupUIEvents() {
   const btnArduino = document.getElementById('btn-connect-arduino');
   if (btnArduino) {
     btnArduino.addEventListener('click', async () => {
-      // Aprovechar el clic del usuario para desbloquear Tone.js automáticamente
-      if (!window.volcanoAudio.isInitialized) {
-        await window.volcanoAudio.init();
-        updateAudioUI(true);
-      }
+      // Llamar primero a connectArduinoSerial() para no perder el user-gesture del navegador
       await connectArduinoSerial();
+      if (!window.volcanoAudio.isInitialized) {
+        window.volcanoAudio.init().then(enabled => updateAudioUI(enabled));
+      }
     });
   }
 
@@ -87,10 +86,10 @@ function setupUIEvents() {
   window.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     const simMap = {
-      '1': 930, // 1kΩ   -> Volcán 1: Pululahua (Rojo grande, VEI 5)
-      '2': 512, // 10kΩ  -> Volcán 2: Villarrica (Rojo chico, VEI 5)
-      '3': 93,  // 100kΩ -> Volcán 3: Licto (Blanco, VEI 0)
-      '4': 45   // 220kΩ -> Volcán 4: Cerro Hudson (Rojo oscuro, VEI 6)
+      '1': 931,  // 1kΩ  -> Volcán 1: Pululahua (Rojo grande, VEI 5)
+      '2': 512,  // 10kΩ -> Volcán 2: Villarrica (Rojo chico, VEI 5)
+      '3': 235,  // 33kΩ -> Volcán 3: Licto (Blanco, VEI 0)
+      '4': 1001  // 220Ω -> Volcán 4: Cerro Hudson (Rojo oscuro, VEI 6)
     };
     if (simMap[e.key] !== undefined) {
       handleArduinoValue(simMap[e.key]);
@@ -667,21 +666,20 @@ function setupAudioVisualizer() {
    Calibrado exactamente para las 4 resistencias: 1kΩ, 10kΩ, 100kΩ y 220kΩ
    ========================================================================== */
 
-const ARDUINO_THRESHOLD = 25; // Lecturas < 25 en A0 significan base vacía (220kΩ lee ~45)
+const ARDUINO_THRESHOLD = 40; // Lecturas < 40 en A0 significan base vacía (0)
 
 /**
- * Con la resistencia de 10kΩ en forma de "U" entre A0 y GND:
- * Lectura A0 = 1023 * (10kΩ / (R_volcan + 10kΩ))
- * - Volcán 1 (R = 1kΩ)   -> A0 ≈ 930 (rango 721 - 1023) -> Pululahua (Rojo grande, VEI 5, 534k hab.)
- * - Volcán 2 (R = 10kΩ)  -> A0 ≈ 512 (rango 251 - 720)  -> Villarrica (Rojo chico, VEI 5, 1.067 hab.)
- * - Volcán 3 (R = 100kΩ) -> A0 ≈ 93  (rango 69 - 250)   -> Licto (Blanco, VEI 0, 250k hab.)
- * - Volcán 4 (R = 220kΩ) -> A0 ≈ 45  (rango 25 - 68)    -> Cerro Hudson (Rojo oscuro, VEI 6, 12 hab.)
+ * Calibrado exacto a las lecturas reales de las 4 pirámides:
+ * - Cerro Hudson (220Ω) -> A0 ≈ 1001    (rango 966 - 1023)
+ * - Pululahua (1kΩ)     -> A0 ≈ 930-932 (rango 721 - 965)
+ * - Villarrica (10kΩ)   -> A0 ≈ 511-513 (rango 370 - 720)
+ * - Licto (~33kΩ)       -> A0 ≈ 223-241 (rango 40  - 369)
  */
 const VOLCANO_RESISTOR_RANGES = [
-  { min: 721, max: 1023, nameMatch: 'Pululahua',  resistor: '1kΩ' },
-  { min: 251, max: 720,  nameMatch: 'Villarrica', resistor: '10kΩ' },
-  { min: 69,  max: 250,  nameMatch: 'Licto',      resistor: '100kΩ' },
-  { min: 25,  max: 68,   nameMatch: 'Hudson',     resistor: '220kΩ' }
+  { min: 966, max: 1023, nameMatch: 'Hudson',     resistor: '220Ω' },
+  { min: 721, max: 965,  nameMatch: 'Pululahua',  resistor: '1kΩ' },
+  { min: 370, max: 720,  nameMatch: 'Villarrica', resistor: '10kΩ' },
+  { min: 40,  max: 369,  nameMatch: 'Licto',      resistor: '33kΩ' }
 ];
 
 const arduinoState = {
@@ -689,38 +687,63 @@ const arduinoState = {
   isConnected: false,
   isVolcanoPresent: false,
   activeVolcanoId: null,
+  pendingVolcanoId: null,
   settleTimer: null,
   removeTimer: null,
-  lastRawVal: 0
+  lastRawVal: 0,
+  recentValues: []
 };
 
-async function connectArduinoSerial() {
+async function openArduinoPort(port) {
   const btn = document.getElementById('btn-connect-arduino');
   const txt = document.getElementById('arduino-btn-text');
   const readout = document.getElementById('arduino-sensor-val');
 
+  if (arduinoState.isConnected && arduinoState.port === port) {
+    return;
+  }
+
+  await port.open({ baudRate: 9600 });
+  if (port.setSignals) {
+    await port.setSignals({ dataTerminalReady: true, requestToSend: true });
+  }
+
+  arduinoState.port = port;
+  arduinoState.isConnected = true;
+
+  if (btn) btn.classList.add('connected');
+  if (txt) txt.textContent = 'Arduino Conectado';
+  if (readout) {
+    readout.hidden = false;
+    readout.textContent = 'A0: esperando...';
+  }
+
+  readArduinoSerialLoop(port);
+}
+
+async function connectArduinoSerial() {
+  const readout = document.getElementById('arduino-sensor-val');
+
   if (!('serial' in navigator)) {
-    alert('Tu navegador no soporta Web Serial API. Por favor abre esta página en Google Chrome o Microsoft Edge.');
+    alert('Tu navegador no soporta Web Serial API. Por favor abre http://localhost:8080 en Google Chrome o Microsoft Edge.');
     return;
   }
 
   try {
     const port = await navigator.serial.requestPort();
-    await port.open({ baudRate: 9600 });
-    if (port.setSignals) {
-      await port.setSignals({ dataTerminalReady: true, requestToSend: true });
-    }
-
-    arduinoState.port = port;
-    arduinoState.isConnected = true;
-
-    if (btn) btn.classList.add('connected');
-    if (txt) txt.textContent = 'Arduino Conectado';
-    if (readout) readout.hidden = false;
-
-    readArduinoSerialLoop(port);
+    await openArduinoPort(port);
   } catch (err) {
     console.warn('Conexión con Arduino cancelada o fallida:', err);
+    if (readout) {
+      readout.hidden = false;
+      if (err && err.name === 'NetworkError') {
+        readout.textContent = 'Puerto ocupado (cierra Arduino IDE u otra pestaña)';
+      } else if (err && err.name === 'NotFoundError') {
+        readout.textContent = 'Abre http://localhost:8080 en Chrome o Edge externo';
+      } else {
+        readout.textContent = `Error: ${err.message || err.name}`;
+      }
+    }
   }
 }
 
@@ -772,7 +795,14 @@ function resolveVolcanoFromSensor(val) {
   return state.volcanoes.find(v => v.name.includes('Villarrica')) || state.selectedVolcano || state.volcanoes[0];
 }
 
-function handleArduinoValue(val) {
+function handleArduinoValue(rawVal) {
+  // Ventana de mediana de las últimas 5 lecturas para estabilizar el contacto en aluminio
+  arduinoState.recentValues.push(rawVal);
+  if (arduinoState.recentValues.length > 5) {
+    arduinoState.recentValues.shift();
+  }
+  const sorted = [...arduinoState.recentValues].sort((a, b) => a - b);
+  const val = sorted[Math.floor(sorted.length / 2)];
   arduinoState.lastRawVal = val;
 
   const btn = document.getElementById('btn-connect-arduino');
@@ -784,7 +814,7 @@ function handleArduinoValue(val) {
     readout.textContent = `A0: ${val}`;
   }
 
-  // CASO 1: Se detecta el volcán sobre los cuadrados de aluminio (A0 >= 50)
+  // CASO 1: Se detecta el volcán sobre los cuadrados de aluminio (A0 >= 25)
   if (val >= ARDUINO_THRESHOLD) {
     if (arduinoState.removeTimer) {
       clearTimeout(arduinoState.removeTimer);
@@ -796,24 +826,30 @@ function handleArduinoValue(val) {
     const targetVolcano = resolveVolcanoFromSensor(val);
     if (!targetVolcano) return;
 
-    // Si aún no estaba puesto o cambió el volcán detectado, esperamos 180 ms para estabilizar contacto
+    // Solo iniciar/reiniciar el timer si el volcán detectado es nuevo o distinto al pendiente
     if (!arduinoState.isVolcanoPresent || arduinoState.activeVolcanoId !== targetVolcano.id) {
-      if (arduinoState.settleTimer) clearTimeout(arduinoState.settleTimer);
-      arduinoState.settleTimer = setTimeout(() => {
-        const stableVolcano = resolveVolcanoFromSensor(arduinoState.lastRawVal);
-        if (stableVolcano && arduinoState.lastRawVal >= ARDUINO_THRESHOLD) {
-          arduinoState.isVolcanoPresent = true;
-          arduinoState.activeVolcanoId = stableVolcano.id;
-          if (txt) txt.textContent = `Volcán: ${stableVolcano.name}`;
-          onVolcanoSelect(stableVolcano);
-        }
-      }, 180);
+      if (!arduinoState.settleTimer || arduinoState.pendingVolcanoId !== targetVolcano.id) {
+        if (arduinoState.settleTimer) clearTimeout(arduinoState.settleTimer);
+        arduinoState.pendingVolcanoId = targetVolcano.id;
+        arduinoState.settleTimer = setTimeout(() => {
+          arduinoState.settleTimer = null;
+          const stableVolcano = resolveVolcanoFromSensor(arduinoState.lastRawVal);
+          if (stableVolcano && arduinoState.lastRawVal >= ARDUINO_THRESHOLD) {
+            arduinoState.isVolcanoPresent = true;
+            arduinoState.activeVolcanoId = stableVolcano.id;
+            arduinoState.pendingVolcanoId = null;
+            if (txt) txt.textContent = `Volcán: ${stableVolcano.name}`;
+            onVolcanoSelect(stableVolcano);
+          }
+        }, 200);
+      }
     }
   } else {
-    // CASO 2: Se retira el volcán de la base (A0 < 50)
+    // CASO 2: Se retira el volcán de la base (A0 < 25)
     if (arduinoState.settleTimer) {
       clearTimeout(arduinoState.settleTimer);
       arduinoState.settleTimer = null;
+      arduinoState.pendingVolcanoId = null;
     }
 
     if (arduinoState.isVolcanoPresent && !arduinoState.removeTimer) {
@@ -821,12 +857,13 @@ function handleArduinoValue(val) {
         if (arduinoState.lastRawVal < ARDUINO_THRESHOLD) {
           arduinoState.isVolcanoPresent = false;
           arduinoState.activeVolcanoId = null;
+          arduinoState.pendingVolcanoId = null;
           if (btn) btn.classList.remove('detecting');
           if (txt) txt.textContent = arduinoState.isConnected ? 'Arduino Conectado' : 'Conectar Arduino';
           onVolcanoPhysicalRemove();
         }
         arduinoState.removeTimer = null;
-      }, 280);
+      }, 300);
     }
   }
 }

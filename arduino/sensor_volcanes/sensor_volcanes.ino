@@ -1,25 +1,27 @@
 /**
  * ============================================================================
- * SENSOR FÍSICO DE VOLCANES (OPCIÓN A - DIVISOR DE VOLTAJE CON 2 CABLES)
+ * SENSOR FÍSICO DE VOLCANES (DIVISOR DE VOLTAJE CON ARDUINO LEONARDO)
  * InfoVis IIC2026 PUC - Entrega 2
  * ============================================================================
  *
- * CONEXIÓN FÍSICA ("EL TRUCO"):
- * 1. Cable 1: Pin 5V del Arduino  ---> Cuadrado de aluminio 1 en la base.
- * 2. Cable 2: Pin A0 del Arduino  ---> Cuadrado de aluminio 2 en la base.
- * 3. Resistencia 10k Ω en "U":    ---> Una pata en A0 (junto al Cable 2) y
- *                                      la otra pata en GND.
- * 4. Volcán de cartón:            ---> Tiene una resistencia (o aluminio)
- *                                      pegada en su base que une ambos
- *                                      cuadrados al apoyarlo.
- * 5. Feedback visual (0 cables):  ---> Usa LED_BUILTIN (pin 13 integrado).
+ * CONEXIÓN FÍSICA:
+ * 1. Cable 1: Pin 5V del Arduino  ---> Aluminio 1 en la base.
+ * 2. Cable 2: Pin A0 del Arduino  ---> Aluminio 2 en la base.
+ * 3. Resistencia 10kΩ en "U":     ---> Entre A0 y GND en el Arduino.
+ * 4. Pirámides de volcanes:       ---> Tienen su resistencia en la base que une
+ *                                      ambos aluminios al apoyarlas:
+ *                                      - Cerro Hudson (220Ω) -> A0 ≈ 1001
+ *                                      - Pululahua (1kΩ)     -> A0 ≈ 931
+ *                                      - Villarrica (10kΩ)   -> A0 ≈ 512
+ *                                      - Licto (33kΩ)        -> A0 ≈ 235
+ * 5. Feedback visual:             ---> Usa LED_BUILTIN (pin 13 integrado).
  */
 
 const int PIN_SENSOR = A0;
 const int PIN_LED = LED_BUILTIN; // LED interno del Arduino (junto al pin 13)
 
-// Umbral para distinguir entre "base vacía" (~0) y el volcán de 220kΩ (~45)
-const int UMBRAL_VOLCAN = 25;
+// Umbral para distinguir entre "base vacía" (~0) y cualquier volcán (>= 40)
+const int UMBRAL_VOLCAN = 40;
 
 void setup() {
   Serial.begin(9600);
