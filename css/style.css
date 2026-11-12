@@ -55,8 +55,81 @@ body {
 .app-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   margin-bottom: 8px;
+  gap: 12px;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.arduino-panel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-arduino {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-arduino:hover {
+  border-color: var(--magma-glow);
+  background: rgba(255, 119, 0, 0.12);
+}
+
+.btn-arduino.connected {
+  border-color: rgba(46, 204, 113, 0.5);
+  background: rgba(46, 204, 113, 0.1);
+}
+
+.btn-arduino.detecting {
+  border-color: var(--magma-glow);
+  background: rgba(255, 61, 0, 0.22);
+  box-shadow: 0 0 12px rgba(255, 61, 0, 0.35);
+}
+
+.arduino-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-arduino.connected .arduino-status-dot {
+  background: #2ecc71;
+  box-shadow: 0 0 6px #2ecc71;
+}
+
+.btn-arduino.detecting .arduino-status-dot {
+  background: var(--magma-glow);
+  box-shadow: 0 0 8px var(--magma-core);
+}
+
+.arduino-sensor-val {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ochre-warn);
+  background: rgba(229, 169, 59, 0.12);
+  border: 1px solid rgba(229, 169, 59, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 3px 7px;
 }
 
 .main-title {

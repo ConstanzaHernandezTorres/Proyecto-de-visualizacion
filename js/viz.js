@@ -69,6 +69,35 @@ function setupUIEvents() {
     e.stopPropagation();
     if (zoomBehavior) svg.transition().duration(400).call(zoomBehavior.transform, d3.zoomIdentity);
   });
+
+  // Botón de conexión directa con Arduino (Web Serial API)
+  const btnArduino = document.getElementById('btn-connect-arduino');
+  if (btnArduino) {
+    btnArduino.addEventListener('click', async () => {
+      // Aprovechar el clic del usuario para desbloquear Tone.js automáticamente
+      if (!window.volcanoAudio.isInitialized) {
+        await window.volcanoAudio.init();
+        updateAudioUI(true);
+      }
+      await connectArduinoSerial();
+    });
+  }
+
+  // Atajos de teclado (Modo prueba / Mago de Oz: teclas 1-4 simulan las 4 resistencias, 0 retira)
+  window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    const simMap = {
+      '1': 930, // 1kΩ   -> Pululahua (Ecuador)
+      '2': 512, // 10kΩ  -> Villarrica (Chile)
+      '3': 93,  // 100kΩ -> Galeras (Colombia)
+      '4': 45   // 220kΩ -> Cerro Hudson (Chile)
+    };
+    if (simMap[e.key] !== undefined) {
+      handleArduinoValue(simMap[e.key]);
+    } else if (e.key === '0' || e.key === 'Escape') {
+      handleArduinoValue(0);
+    }
+  });
 }
 
 function updateAudioUI(enabled) {
@@ -632,3 +661,180 @@ function setupAudioVisualizer() {
 
   renderWave();
 }
+
+/* ==========================================================================
+   CONEXIÓN FÍSICO-DIGITAL: ARDUINO + DIVISOR DE VOLTAJE (WEB SERIAL API)
+   Calibrado exactamente para las 4 resistencias: 1kΩ, 10kΩ, 100kΩ y 220kΩ
+   ========================================================================== */
+
+const ARDUINO_THRESHOLD = 25; // Lecturas < 25 en A0 significan base vacía (220kΩ lee ~45)
+
+/**
+ * Con la resistencia de 10kΩ en forma de "U" entre A0 y GND:
+ * Lectura A0 = 1023 * (10kΩ / (R_volcan + 10kΩ))
+ * - R = 1kΩ   -> A0 ≈ 930 (rango 721 - 1023)
+ * - R = 10kΩ  -> A0 ≈ 512 (rango 251 - 720)
+ * - R = 100kΩ -> A0 ≈ 93  (rango 69 - 250)
+ * - R = 220kΩ -> A0 ≈ 45  (rango 25 - 68)
+ */
+const VOLCANO_RESISTOR_RANGES = [
+  { min: 721, max: 1023, nameMatch: 'Pululahua',  resistor: '1kΩ' },
+  { min: 251, max: 720,  nameMatch: 'Villarrica', resistor: '10kΩ' },
+  { min: 69,  max: 250,  nameMatch: 'Galeras',    resistor: '100kΩ' },
+  { min: 25,  max: 68,   nameMatch: 'Hudson',     resistor: '220kΩ' }
+];
+
+const arduinoState = {
+  port: null,
+  isConnected: false,
+  isVolcanoPresent: false,
+  activeVolcanoId: null,
+  settleTimer: null,
+  removeTimer: null,
+  lastRawVal: 0
+};
+
+async function connectArduinoSerial() {
+  const btn = document.getElementById('btn-connect-arduino');
+  const txt = document.getElementById('arduino-btn-text');
+  const readout = document.getElementById('arduino-sensor-val');
+
+  if (!('serial' in navigator)) {
+    alert('Tu navegador no soporta Web Serial API. Por favor abre esta página en Google Chrome o Microsoft Edge.');
+    return;
+  }
+
+  try {
+    const port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 9600 });
+
+    arduinoState.port = port;
+    arduinoState.isConnected = true;
+
+    if (btn) btn.classList.add('connected');
+    if (txt) txt.textContent = 'Arduino Conectado';
+    if (readout) readout.hidden = false;
+
+    readArduinoSerialLoop(port);
+  } catch (err) {
+    console.warn('Conexión con Arduino cancelada o fallida:', err);
+  }
+}
+
+async function readArduinoSerialLoop(port) {
+  const textDecoder = new TextDecoderStream();
+  port.readable.pipeTo(textDecoder.writable).catch(() => {});
+  const reader = textDecoder.readable.getReader();
+
+  let buffer = '';
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) {
+        buffer += value;
+        const lines = buffer.split(/\r?\n/);
+        buffer = lines.pop(); // guardar fragmento incompleto
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          const num = parseInt(trimmed, 10);
+          if (!isNaN(num)) {
+            handleArduinoValue(num);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error leyendo puerto serial de Arduino:', err);
+  } finally {
+    reader.releaseLock();
+    const btn = document.getElementById('btn-connect-arduino');
+    const txt = document.getElementById('arduino-btn-text');
+    if (btn) btn.classList.remove('connected', 'detecting');
+    if (txt) txt.textContent = 'Reconectar Arduino';
+    arduinoState.isConnected = false;
+  }
+}
+
+function resolveVolcanoFromSensor(val) {
+  const range = VOLCANO_RESISTOR_RANGES.find(r => val >= r.min && val <= r.max);
+  if (range) {
+    const found = state.volcanoes.find(v =>
+      v.region === 'South America' && v.name.toLowerCase().includes(range.nameMatch.toLowerCase())
+    );
+    if (found) return found;
+  }
+  // Por defecto: Villarrica (o el volcán actualmente seleccionado)
+  return state.volcanoes.find(v => v.name.includes('Villarrica')) || state.selectedVolcano || state.volcanoes[0];
+}
+
+function handleArduinoValue(val) {
+  arduinoState.lastRawVal = val;
+
+  const btn = document.getElementById('btn-connect-arduino');
+  const txt = document.getElementById('arduino-btn-text');
+  const readout = document.getElementById('arduino-sensor-val');
+
+  if (readout) {
+    readout.hidden = false;
+    readout.textContent = `A0: ${val}`;
+  }
+
+  // CASO 1: Se detecta el volcán sobre los cuadrados de aluminio (A0 >= 50)
+  if (val >= ARDUINO_THRESHOLD) {
+    if (arduinoState.removeTimer) {
+      clearTimeout(arduinoState.removeTimer);
+      arduinoState.removeTimer = null;
+    }
+
+    if (btn) btn.classList.add('detecting');
+
+    const targetVolcano = resolveVolcanoFromSensor(val);
+    if (!targetVolcano) return;
+
+    // Si aún no estaba puesto o cambió el volcán detectado, esperamos 180 ms para estabilizar contacto
+    if (!arduinoState.isVolcanoPresent || arduinoState.activeVolcanoId !== targetVolcano.id) {
+      if (arduinoState.settleTimer) clearTimeout(arduinoState.settleTimer);
+      arduinoState.settleTimer = setTimeout(() => {
+        const stableVolcano = resolveVolcanoFromSensor(arduinoState.lastRawVal);
+        if (stableVolcano && arduinoState.lastRawVal >= ARDUINO_THRESHOLD) {
+          arduinoState.isVolcanoPresent = true;
+          arduinoState.activeVolcanoId = stableVolcano.id;
+          if (txt) txt.textContent = `Volcán: ${stableVolcano.name}`;
+          onVolcanoSelect(stableVolcano);
+        }
+      }, 180);
+    }
+  } else {
+    // CASO 2: Se retira el volcán de la base (A0 < 50)
+    if (arduinoState.settleTimer) {
+      clearTimeout(arduinoState.settleTimer);
+      arduinoState.settleTimer = null;
+    }
+
+    if (arduinoState.isVolcanoPresent && !arduinoState.removeTimer) {
+      arduinoState.removeTimer = setTimeout(() => {
+        if (arduinoState.lastRawVal < ARDUINO_THRESHOLD) {
+          arduinoState.isVolcanoPresent = false;
+          arduinoState.activeVolcanoId = null;
+          if (btn) btn.classList.remove('detecting');
+          if (txt) txt.textContent = arduinoState.isConnected ? 'Arduino Conectado' : 'Conectar Arduino';
+          onVolcanoPhysicalRemove();
+        }
+        arduinoState.removeTimer = null;
+      }, 280);
+    }
+  }
+}
+
+function onVolcanoPhysicalRemove() {
+  // Detener el pulso sonoro y regresar suavemente al mapa general de Sudamérica
+  if (window.volcanoAudio) {
+    window.volcanoAudio.stopAll();
+  }
+  if (zoomBehavior && svg) {
+    svg.transition().duration(600).call(zoomBehavior.transform, d3.zoomIdentity);
+  }
+}
+

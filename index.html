@@ -25,7 +25,16 @@
     <div class="header-main">
       <h1 class="main-title">¿Dónde se encuentran las mayores amenazas volcánicas en Sudamérica?</h1>
     </div>
-    <div class="source-credit">Smithsonian GVP &amp; LandScan · 39 Amenazas Mayores</div>
+    <div class="header-controls">
+      <div class="arduino-panel">
+        <button id="btn-connect-arduino" class="btn-arduino" type="button" title="Conectar sensor físico Arduino por USB">
+          <span id="arduino-status-dot" class="arduino-status-dot"></span>
+          <span id="arduino-btn-text">Conectar Arduino</span>
+        </button>
+        <span id="arduino-sensor-val" class="arduino-sensor-val" hidden>A0: --</span>
+      </div>
+      <div class="source-credit">Smithsonian GVP &amp; LandScan · 39 Amenazas Mayores</div>
+    </div>
   </header>
 
   <!-- VISUALIZACIÓN PRINCIPAL -->
