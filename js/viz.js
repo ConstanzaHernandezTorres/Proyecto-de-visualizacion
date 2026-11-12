@@ -83,14 +83,14 @@ function setupUIEvents() {
     });
   }
 
-  // Atajos de teclado (Modo prueba / Mago de Oz: teclas 1-4 simulan las 4 resistencias, 0 retira)
+  // Atajos de teclado (Modo prueba / Mago de Oz: teclas 1-3 simulan los 3 volcanes, 0 retira)
   window.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     const simMap = {
-      '1': 930, // 1kΩ   -> Pululahua (Ecuador)
-      '2': 512, // 10kΩ  -> Villarrica (Chile)
-      '3': 93,  // 100kΩ -> Galeras (Colombia)
-      '4': 45   // 220kΩ -> Cerro Hudson (Chile)
+      '1': 930, // 1kΩ   -> Volcán 1: Pululahua (Rojo grande, VEI 5)
+      '2': 93,  // 100kΩ -> Volcán 2: Villarrica (Rojo chico, VEI 5)
+      '3': 45,  // 220kΩ -> Volcán 3: Licto (Blanco, VEI 0)
+      '4': 512  // 10kΩ extra (opcional) -> Cerro Hudson (VEI 6)
     };
     if (simMap[e.key] !== undefined) {
       handleArduinoValue(simMap[e.key]);
@@ -670,18 +670,18 @@ function setupAudioVisualizer() {
 const ARDUINO_THRESHOLD = 25; // Lecturas < 25 en A0 significan base vacía (220kΩ lee ~45)
 
 /**
- * Con la resistencia de 10kΩ en forma de "U" entre A0 y GND:
- * Lectura A0 = 1023 * (10kΩ / (R_volcan + 10kΩ))
- * - R = 1kΩ   -> A0 ≈ 930 (rango 721 - 1023)
- * - R = 10kΩ  -> A0 ≈ 512 (rango 251 - 720)
- * - R = 100kΩ -> A0 ≈ 93  (rango 69 - 250)
- * - R = 220kΩ -> A0 ≈ 45  (rango 25 - 68)
+ * Con la resistencia de 10kΩ en forma de "U" puesta en el Arduino (entre A0 y GND),
+ * las otras 3 resistencias del kit van debajo de los 3 volcanes:
+ * - Volcán 1 (R = 1kΩ)   -> A0 ≈ 930 (rango 721 - 1023) -> Pululahua (Rojo grande, VEI 5, 534k hab.)
+ * - Volcán 2 (R = 100kΩ) -> A0 ≈ 93  (rango 69 - 250)   -> Villarrica (Rojo chico, VEI 5, 1.067 hab.)
+ * - Volcán 3 (R = 220kΩ) -> A0 ≈ 45  (rango 25 - 68)    -> Licto (Blanco, VEI 0, 250k hab.)
+ * - Extra    (R = 10kΩ)  -> A0 ≈ 512 (rango 251 - 720)  -> Cerro Hudson (VEI 6, si tienen otra de 10kΩ)
  */
 const VOLCANO_RESISTOR_RANGES = [
   { min: 721, max: 1023, nameMatch: 'Pululahua',  resistor: '1kΩ' },
-  { min: 251, max: 720,  nameMatch: 'Villarrica', resistor: '10kΩ' },
-  { min: 69,  max: 250,  nameMatch: 'Galeras',    resistor: '100kΩ' },
-  { min: 25,  max: 68,   nameMatch: 'Hudson',     resistor: '220kΩ' }
+  { min: 69,  max: 250,  nameMatch: 'Villarrica', resistor: '100kΩ' },
+  { min: 25,  max: 68,   nameMatch: 'Licto',      resistor: '220kΩ' },
+  { min: 251, max: 720,  nameMatch: 'Hudson',     resistor: '10kΩ' }
 ];
 
 const arduinoState = {
@@ -707,6 +707,9 @@ async function connectArduinoSerial() {
   try {
     const port = await navigator.serial.requestPort();
     await port.open({ baudRate: 9600 });
+    if (port.setSignals) {
+      await port.setSignals({ dataTerminalReady: true, requestToSend: true });
+    }
 
     arduinoState.port = port;
     arduinoState.isConnected = true;
