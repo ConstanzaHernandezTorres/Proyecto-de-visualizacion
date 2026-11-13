@@ -7,7 +7,7 @@
 | Información | Detalle |
 | :--- | :--- |
 | **Grupo:** | Grupo 19 |
-| **Integrantes:** | Javiera Bascur, Florencia Carvallo, Constanza Hernández |
+| **Integrantes:** | Javiera Bascur, Constanza Hernández |
 | **GitHub Pages:** | [https://constanzahernandeztorres.github.io/Proyecto-de-visualizaci-n/](https://constanzahernandeztorres.github.io/Proyecto-de-visualizaci-n/) |
 | **Repositorio GitHub:** | [https://github.com/ConstanzaHernandezTorres/Proyecto-de-visualizaci-n.git](https://github.com/ConstanzaHernandezTorres/Proyecto-de-visualizaci-n.git) |
 | **Video demostrativo:** | [Insertar enlace a YouTube u otra plataforma pública] |
@@ -26,7 +26,7 @@
 8. [Estructura del repositorio](#estructura-del-repositorio)
 9. [Instalación y ejecución local](#instalación-y-ejecución-local)
 10. [Proceso de diseño e iteraciones (V1 a V4)](#proceso-de-diseño-e-iteraciones-v1-a-v4)
-11. [Evaluación con usuarios y feedback entre pares](#evaluación-con-usuarios-y-feedback-entre-pares)
+11. [Feedback entre pares (R2)](#feedback-entre-pares-r2)
 12. [Créditos y equipo](#créditos-y-equipo)
 
 ---
@@ -233,10 +233,10 @@ http://localhost:8080
 
 ## Proceso de diseño e iteraciones (V1 a V4)
 
-El diseño actual es el resultado de un proceso iterativo de cuatro versiones, alimentado por revisiones con el equipo docente, evaluaciones entre pares y pruebas con usuarios reales:
+El diseño actual es el resultado de un proceso iterativo de cuatro versiones, alimentado por revisiones con el equipo docente y evaluaciones formativas entre pares:
 
 ```
-[V1: Árbol de Tenis] ──(R1: Docente)──► [V2: Tenis Completo] ──(Pivote)──► [V3: Volcanes Globales] ──(R2/R3/Usuarios)──► [V4: Sudamérica Zero-Overlap]
+[V1: Árbol de Tenis] ──(R1: Docente)──► [V2: Tenis Completo] ──(Pivote)──► [V3: Volcanes Globales] ──(R2/R3: Docente y Pares)──► [V4: Sudamérica Zero-Overlap]
 ```
 
 ### V1 — La idea completa (Tenis)
@@ -264,20 +264,13 @@ El diseño actual es el resultado de un proceso iterativo de cuatro versiones, a
 
 ---
 
-## Evaluación con usuarios y feedback entre pares
+## Feedback entre pares (R2)
 
-### Evaluación con usuarios (Thinking Aloud)
-* **Participante:** Estudiante universitaria de tercer año (externa al curso y al grupo), sin conocimientos previos de vulcanología. Sesión presencial de 12 minutos realizada el 17 de octubre de 2026.
-* **Hallazgos clave:**
-  * **Comprensión sonora inmediata:** La participante comprendió sin instrucción previa la metáfora del pulso cardíaco: identificó espontáneamente que a mayor frecuencia de latidos había más vidas en peligro.
-  * **Detección de puntos de bloqueo en V3:** Al intentar interactuar con la zona central de Chile expresó: *«¿Por qué algunos volcanes en Chile están uno encima del otro? No puedo pinchar el que está abajo»*. Asimismo, al activar filtros manuales manifestó confusión por saturación de pantalla.
-  * **Impacto en el diseño final:** Estos resultados detonaron la transición a la V4, motivando la eliminación de la botonera de filtros a favor de una narrativa explicativa fija y la creación del algoritmo de desplazamiento anti-solapamiento con líneas de guía.
-
-### Feedback formativo entregado a otros grupos (R2)
 El Grupo 19 evaluó el proyecto del **Grupo 14** (visualización de sismicidad histórica en Chile):
 * **Eje de profundidad invertido:** Se observó que el eje de profundidad crecía hacia arriba, contradiciendo la convención espacial intuitiva del plano subterráneo (**Cápsula 08**).
 * **Escala cromática accesible:** Utilizaban una escala arcoíris (*rainbow colormap*); se les recomendó transicionar a una paleta secuencial perceptual continua como *Viridis* (**Cápsula 10**).
 * **Sonificación multidimensional:** Variaban únicamente el volumen según la magnitud; se les aconsejó desacoplar canales asignando la magnitud al tono fundamental y la profundidad al timbre, evitando la fatiga auditiva (**Cápsula 23**).
+* **Aprendizajes para el proyecto propio:** Confirmamos el acierto de nuestro diseño con dos canales ortogonales en Tone.js (subgrave FM para VEI y tempo BPM cardíaco para población) y la necesidad de calibrar exhaustivamente nuestras leyendas para evitar lecturas ambiguas.
 
 ---
 
@@ -288,7 +281,6 @@ Visualización desarrollada para el curso **IIC2026 — Visualización de Inform
 | Nombre | Rol / Contribución | Correo institucional |
 | :--- | :--- | :--- |
 | **Javiera Bascur** | Procesamiento de datos satelitales, diseño cartográfico y documentación | `jbascur@uc.cl` |
-| **Florencia Carvallo** | Codificación D3.js, algoritmo anti-solapamiento e interacción | `fcarvallo@uc.cl` |
-| **Constanza Hernández** | Motor de sonificación Tone.js, diseño visual CSS y evaluación de usuarios | `chernandez@uc.cl` |
+| **Constanza Hernández** | Motor de sonificación Tone.js, diseño visual CSS y visualización interactiva D3.js | `chernandez@uc.cl` |
 
 *Datos geológicos cortesía de Smithsonian Institution (GVP) y datos demográficos cortesía de Oak Ridge National Laboratory (LandScan).*
