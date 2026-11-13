@@ -8,8 +8,8 @@
 | :--- | :--- |
 | **Grupo:** | Grupo 19 |
 | **Integrantes:** | Javiera Bascur, Constanza Hernández |
-| **GitHub Pages:** | [https://constanzahernandeztorres.github.io/Proyecto-de-visualizaci-n/](https://constanzahernandeztorres.github.io/Proyecto-de-visualizaci-n/) |
-| **Repositorio GitHub:** | [https://github.com/ConstanzaHernandezTorres/Proyecto-de-visualizaci-n.git](https://github.com/ConstanzaHernandezTorres/Proyecto-de-visualizaci-n.git) |
+| **GitHub Pages:** | [https://constanzahernandeztorres.github.io/Proyecto-de-visualizacion/](https://constanzahernandeztorres.github.io/Proyecto-de-visualizacion/) |
+| **Repositorio GitHub:** | [https://github.com/ConstanzaHernandezTorres/Proyecto-de-visualizacion.git](https://github.com/ConstanzaHernandezTorres/Proyecto-de-visualizacion.git) |
 | **Video demostrativo:** | [Insertar enlace a YouTube u otra plataforma pública] |
 
 ---
