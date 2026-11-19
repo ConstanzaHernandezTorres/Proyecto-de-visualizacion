@@ -10,10 +10,10 @@
  * 3. Resistencia 10kΩ en "U":     ---> Entre A0 y GND en el Arduino.
  * 4. Pirámides de volcanes:       ---> Tienen su resistencia en la base que une
  *                                      ambos aluminios al apoyarlas:
- *                                      - Cerro Hudson (220Ω) -> A0 ≈ 1001
- *                                      - Pululahua (1kΩ)     -> A0 ≈ 931
- *                                      - Villarrica (10kΩ)   -> A0 ≈ 512
- *                                      - Licto (33kΩ)        -> A0 ≈ 235
+ *                                      - Pululahua (220Ω, ficha más oscura)   -> A0 ≈ 1001
+ *                                      - Villarrica (1kΩ, ficha roja grande)  -> A0 ≈ 931
+ *                                      - Licto (10kΩ, ficha roja chica)       -> A0 ≈ 512
+ *                                      - Cerro Hudson (33kΩ, ficha blanca)    -> A0 ≈ 235
  * 5. Feedback visual:             ---> Usa LED_BUILTIN (pin 13 integrado).
  */
 

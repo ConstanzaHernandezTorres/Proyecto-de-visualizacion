@@ -19,7 +19,7 @@ const state = {
 };
 
 const colorScale = d3.scaleSequential()
-  .domain([0, 7])
+  .domain([0, Math.log10(550000)])
   .interpolator(d3.interpolateYlOrRd);
 
 let svg, gRoot, gMap, gLeaders, gWaves, gVolcanoes, gLabels, projection, pathGen, zoomBehavior;
@@ -86,10 +86,10 @@ function setupUIEvents() {
   window.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     const simMap = {
-      '1': 931,  // 1kΩ  -> Volcán 1: Pululahua (Rojo grande, VEI 5)
-      '2': 512,  // 10kΩ -> Volcán 2: Villarrica (Rojo chico, VEI 5)
-      '3': 235,  // 33kΩ -> Volcán 3: Licto (Blanco, VEI 0)
-      '4': 1001  // 220Ω -> Volcán 4: Cerro Hudson (Rojo oscuro, VEI 6)
+      '1': 1001, // 220Ω (Ficha más oscura, antes Hudson)     -> Pululahua (534.403 hab., VEI 5)
+      '2': 931,  // 1kΩ  (Ficha roja grande, antes Pululahua) -> Villarrica (1.067 hab., VEI 5)
+      '3': 512,  // 10kΩ (Ficha roja chica, antes Villarrica) -> Licto (250.144 hab., VEI 0)
+      '4': 235   // 33kΩ (Ficha blanca grande, antes Licto)   -> Cerro Hudson (12 hab., VEI 6)
     };
     if (simMap[e.key] !== undefined) {
       handleArduinoValue(simMap[e.key]);
@@ -262,18 +262,19 @@ function renderSouthAmericaThreats() {
     (v.max_vei >= 4 || (v.pop_10km || 0) >= 10000)
   );
 
-  // Crear nodos con coordenadas proyectadas y radio
+  // Crear nodos con coordenadas proyectadas y radio según el VEI
   const nodes = saThreats.map(d => {
     const p = projection([d.lon, d.lat]);
     const pop = d.pop_10km || 0;
-    // Escala perceptualmente calibrada para no saturar
-    const r = Math.max(5.5, Math.min(16, 4.5 + Math.log10(pop + 1) * 2.1));
+    const vei = d.max_vei || 0;
+    // Escala de tamaño según el VEI (mientras mayor VEI, mayor tamaño del círculo)
+    const r = 5 + vei * 1.6;
     return {
       data: d,
       id: d.id,
       name: d.name,
       country: d.country,
-      vei: d.max_vei,
+      vei: vei,
       pop10k: pop,
       origX: p ? p[0] : 0,
       origY: p ? p[1] : 0,
@@ -480,7 +481,7 @@ function renderSouthAmericaThreats() {
     .attr('cx', d => d.x)
     .attr('cy', d => d.y)
     .attr('r', d => d.r)
-    .style('fill', d => colorScale(d.vei))
+    .style('fill', d => colorScale(Math.log10((d.pop10k || 0) + 1)))
     .style('stroke', '#0e0d0c')
     .style('stroke-width', '1.1px')
     .style('opacity', 0.88);
@@ -669,17 +670,18 @@ function setupAudioVisualizer() {
 const ARDUINO_THRESHOLD = 40; // Lecturas < 40 en A0 significan base vacía (0)
 
 /**
- * Calibrado exacto a las lecturas reales de las 4 pirámides:
- * - Cerro Hudson (220Ω) -> A0 ≈ 1001    (rango 966 - 1023)
- * - Pululahua (1kΩ)     -> A0 ≈ 930-932 (rango 721 - 965)
- * - Villarrica (10kΩ)   -> A0 ≈ 511-513 (rango 370 - 720)
- * - Licto (~33kΩ)       -> A0 ≈ 223-241 (rango 40  - 369)
+ * Calibrado exacto a las lecturas reales de las 4 pirámides reasignadas
+ * para que el color físico represente habitantes (pop_10km) y el tamaño el VEI:
+ * - Ficha 220Ω (Rojo más intenso, antes Hudson)    -> Pululahua (534.403 hab., VEI 5) [A0 ≈ 1001, rango 966 - 1023]
+ * - Ficha 1kΩ  (Rojo grande, antes Pululahua)      -> Villarrica (1.067 hab., VEI 5)  [A0 ≈ 931,  rango 721 - 965]
+ * - Ficha 10kΩ (Rojo chico, antes Villarrica)      -> Licto (250.144 hab., VEI 0)     [A0 ≈ 512,  rango 370 - 720]
+ * - Ficha 33kΩ (Blanco menos intenso, antes Licto) -> Cerro Hudson (12 hab., VEI 6)   [A0 ≈ 235,  rango 40  - 369]
  */
 const VOLCANO_RESISTOR_RANGES = [
-  { min: 966, max: 1023, nameMatch: 'Hudson',     resistor: '220Ω' },
-  { min: 721, max: 965,  nameMatch: 'Pululahua',  resistor: '1kΩ' },
-  { min: 370, max: 720,  nameMatch: 'Villarrica', resistor: '10kΩ' },
-  { min: 40,  max: 369,  nameMatch: 'Licto',      resistor: '33kΩ' }
+  { min: 966, max: 1023, nameMatch: 'Pululahua',  resistor: '220Ω' },
+  { min: 721, max: 965,  nameMatch: 'Villarrica', resistor: '1kΩ' },
+  { min: 370, max: 720,  nameMatch: 'Licto',      resistor: '10kΩ' },
+  { min: 40,  max: 369,  nameMatch: 'Hudson',     resistor: '33kΩ' }
 ];
 
 const arduinoState = {

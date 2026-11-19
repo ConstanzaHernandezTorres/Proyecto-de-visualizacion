@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
   <!-- Estilos -->
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=2">
 
   <!-- Librerías D3 y Tone.js -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -61,11 +61,11 @@
           <span class="guide-keys-label">Claves de lectura visual:</span>
           <div class="guide-key-item">
             <span class="guide-dot dot-vei"></span>
-            <span><strong>Color:</strong> Nivel de explosividad VEI (más oscuro/rojo = mayor destrucción).</span>
+            <span><strong>Color:</strong> Habitantes dentro del radio de 10 km que deben evacuar (más intenso/oscuro = más personas).</span>
           </div>
           <div class="guide-key-item">
             <span class="guide-dot dot-pop"></span>
-            <span><strong>Tamaño:</strong> Habitantes dentro del radio de 10 km que deben evacuar.</span>
+            <span><strong>Tamaño:</strong> Nivel de explosividad VEI (mayor círculo = mayor explosividad).</span>
           </div>
         </div>
       </aside>
@@ -96,45 +96,43 @@
       <!-- LEYENDA CALIBRADA -->
       <div class="viz-legend" aria-label="Leyenda">
         <div class="legend-group">
-          <span class="legend-title">Índice de Explosividad (VEI)</span>
+          <span class="legend-title">Evacuación (Población a 10 km)</span>
           <div class="legend-gradient"></div>
           <div class="legend-nums">
             <span>0</span>
-            <span>1</span>
-            <span>2</span>
-            <span>3</span>
-            <span>4</span>
-            <span>5</span>
-            <span>6</span>
-            <span>7</span>
+            <span>100</span>
+            <span>1k</span>
+            <span>10k</span>
+            <span>100k</span>
+            <span>500k+</span>
           </div>
         </div>
         <div class="legend-group">
-          <span class="legend-title">Evacuación (Población a 10 km)</span>
+          <span class="legend-title">Índice de Explosividad (VEI)</span>
           <div class="legend-pop-scale">
             <div class="pop-tier">
               <div class="pop-circle-box">
                 <span class="pop-circle circle-sm"></span>
               </div>
-              <span class="pop-label">0</span>
+              <span class="pop-label">VEI 0</span>
             </div>
             <div class="pop-tier">
               <div class="pop-circle-box">
                 <span class="pop-circle circle-md"></span>
               </div>
-              <span class="pop-label">10k</span>
+              <span class="pop-label">VEI 3</span>
             </div>
             <div class="pop-tier">
               <div class="pop-circle-box">
                 <span class="pop-circle circle-lg"></span>
               </div>
-              <span class="pop-label">100k</span>
+              <span class="pop-label">VEI 5</span>
             </div>
             <div class="pop-tier">
               <div class="pop-circle-box">
                 <span class="pop-circle circle-xl"></span>
               </div>
-              <span class="pop-label">500k+</span>
+              <span class="pop-label">VEI 7</span>
             </div>
           </div>
         </div>
@@ -146,7 +144,7 @@
     </div>
   </main>
 
-  <script src="js/audio.js"></script>
-  <script src="js/viz.js"></script>
+  <script src="js/audio.js?v=3"></script>
+  <script src="js/viz.js?v=3"></script>
 </body>
 </html>
