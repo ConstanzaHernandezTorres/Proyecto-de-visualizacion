@@ -10,7 +10,7 @@
 | **Integrantes:** | Javiera Bascur (`javiera.bascur@uc.cl`), Constanza Hernández (`constanza.h.torres@uc.cl`) |
 | **GitHub Pages:** | [https://constanzahernandeztorres.github.io/Proyecto-de-visualizacion/](https://constanzahernandeztorres.github.io/Proyecto-de-visualizacion/) |
 | **Repositorio GitHub:** | [https://github.com/ConstanzaHernandezTorres/Proyecto-de-visualizacion.git](https://github.com/ConstanzaHernandezTorres/Proyecto-de-visualizacion.git) |
-| **Video demostrativo:** | [https://youtu.be/6c3yqVrl8pM](https://youtu.be/6c3yqVrl8pM?si=xk4WO-d8X7HV3EQm) |
+| **Video demostrativo:** | [https://youtu.be/lgD8wK_w_tY](https://youtu.be/lgD8wK_w_tY?si=kFQdfTKG8JCcTB9F) |
 
 ---
 
